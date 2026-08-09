@@ -27,6 +27,7 @@ if ($stalePids) {
 # Ensure frontend .env.local exists from .env.example if missing
 if ((-not (Test-Path "$repoRoot\frontend\.env.local")) -and (Test-Path "$repoRoot\frontend\.env.example")) {
   Copy-Item "$repoRoot\frontend\.env.example" "$repoRoot\frontend\.env.local"
+  Add-Content "$repoRoot\frontend\.env.local" "`nAGENT_NAME=my-agent"
 }
 
 # Ensure backend .env.local exists from .env.example if missing
