@@ -24,6 +24,15 @@ if ($stalePids) {
     }
   }
 }
+# Ensure frontend .env.local exists from .env.example if missing
+if ((-not (Test-Path "$repoRoot\frontend\.env.local")) -and (Test-Path "$repoRoot\frontend\.env.example")) {
+  Copy-Item "$repoRoot\frontend\.env.example" "$repoRoot\frontend\.env.local"
+}
+
+# Ensure backend .env.local exists from .env.example if missing
+if ((-not (Test-Path "$repoRoot\backend\.env.local")) -and (Test-Path "$repoRoot\backend\.env.example")) {
+  Copy-Item "$repoRoot\backend\.env.example" "$repoRoot\backend\.env.local"
+}
 
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host " Starting Murf + LiveKit Day 4 Voice Agent" -ForegroundColor Cyan
