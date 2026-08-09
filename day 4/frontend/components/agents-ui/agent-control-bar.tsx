@@ -3,8 +3,7 @@
 import { type ComponentProps, useEffect, useRef, useState } from 'react';
 import { Track } from 'livekit-client';
 import { Loader, MessageSquareTextIcon, SendHorizontal } from 'lucide-react';
-import { motion } from 'motion/react';
-type MotionProps = ComponentProps<typeof motion.div>;
+import { type MotionProps, motion } from 'motion/react';
 import { useChat } from '@livekit/components-react';
 import { AgentDisconnectButton } from '@/components/agents-ui/agent-disconnect-button';
 import { AgentTrackControl } from '@/components/agents-ui/agent-track-control';
