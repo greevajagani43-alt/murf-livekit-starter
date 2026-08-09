@@ -56,7 +56,11 @@ class Assistant(Agent):
         logger.info(f"Looking up caller with name: {name}")
         user = db.get_user(name)
         if user:
-            return f"Found user: {user['name']}. Facts: {user['facts']}"
+            return (
+                f"Found returning user: {user['name']} (ID: {user['user_id']}). "
+                f"Language: {user['language_preference']}. "
+                f"Facts: {user['facts']}. Last interaction: {user['last_interaction']}"
+            )
         return "User not found."
 
     @function_tool
@@ -67,6 +71,7 @@ class Assistant(Agent):
         past_orders: str,
         usual_quantities: str,
         preferred_delivery_slot: str,
+        language_preference: str = "Hindi",
     ) -> str:
         """Use this tool to save a caller's information.
         You MUST ask for their permission before saving this information.
@@ -76,6 +81,7 @@ class Assistant(Agent):
             past_orders: Summary of past orders (e.g., 'rice, dal').
             usual_quantities: Summary of usual quantities (e.g., '5kg rice, 2kg dal').
             preferred_delivery_slot: Preferred delivery time (e.g., 'evening', 'morning').
+            language_preference: Language preference of caller (default: 'Hindi').
         """
         logger.info(f"Saving info for caller: {name}")
         facts = {
@@ -83,8 +89,9 @@ class Assistant(Agent):
             "usual_quantities": usual_quantities,
             "preferred_delivery_slot": preferred_delivery_slot,
         }
-        db.save_user(name, facts)
-        return "Caller information saved successfully."
+        user_id = db.save_user(name, facts, language_preference=language_preference)
+        return f"Caller information saved successfully for {name} with ID {user_id}."
+
 
 
 server = AgentServer()

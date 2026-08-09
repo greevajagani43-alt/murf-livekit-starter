@@ -1,8 +1,9 @@
+import difflib
 import json
 import logging
 import os
 import sqlite3
-import difflib
+import uuid
 
 logger = logging.getLogger("agent")
 
@@ -14,7 +15,9 @@ def init_db():
     c = conn.cursor()
     c.execute("""
         CREATE TABLE IF NOT EXISTS users (
-            name TEXT PRIMARY KEY COLLATE NOCASE,
+            user_id TEXT PRIMARY KEY,
+            name TEXT NOT NULL COLLATE NOCASE,
+            language_preference TEXT DEFAULT 'Hindi',
             facts TEXT,
             last_interaction TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -27,44 +30,55 @@ def init_db():
 def get_user(name: str):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT name, facts FROM users")
+    c.execute("SELECT user_id, name, language_preference, facts, last_interaction FROM users")
     rows = c.fetchall()
     conn.close()
 
     if not rows:
         return None
 
-    names = [row[0] for row in rows]
-    # Find the closest matching name (helps with speech-to-text typos like Jatim vs Jatin)
+    names = [row[1] for row in rows]
     matches = difflib.get_close_matches(name, names, n=1, cutoff=0.6)
-    
+
     if matches:
         matched_name = matches[0]
         for row in rows:
-            if row[0] == matched_name:
+            if row[1].lower() == matched_name.lower():
                 try:
-                    facts = json.loads(row[1]) if row[1] else {}
+                    facts = json.loads(row[3]) if row[3] else {}
                 except json.JSONDecodeError:
                     facts = {}
-                return {"name": matched_name, "facts": facts}
-                
+                return {
+                    "user_id": row[0],
+                    "name": row[1],
+                    "language_preference": row[2],
+                    "facts": facts,
+                    "last_interaction": row[4],
+                }
+
     return None
 
 
-def save_user(name: str, facts: dict):
+def save_user(name: str, facts: dict, language_preference: str = "Hindi"):
+    existing = get_user(name)
+    user_id = existing["user_id"] if existing else f"usr_{uuid.uuid4().hex[:8]}"
+
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     facts_json = json.dumps(facts)
     c.execute(
         """
-        INSERT INTO users (name, facts, last_interaction)
-        VALUES (?, ?, CURRENT_TIMESTAMP)
-        ON CONFLICT(name) DO UPDATE SET
+        INSERT INTO users (user_id, name, language_preference, facts, last_interaction)
+        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id) DO UPDATE SET
+            name=excluded.name,
+            language_preference=excluded.language_preference,
             facts=excluded.facts,
             last_interaction=CURRENT_TIMESTAMP
     """,
-        (name, facts_json),
+        (user_id, name, language_preference, facts_json),
     )
     conn.commit()
     conn.close()
-    logger.info(f"User {name} saved/updated in database.")
+    logger.info(f"User {name} ({user_id}) saved/updated in database.")
+    return user_id
