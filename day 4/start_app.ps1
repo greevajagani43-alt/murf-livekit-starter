@@ -15,6 +15,16 @@ if (-not (Test-CommandExists "pnpm")) {
 
 $repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 
+# Clear any stale process occupying port 3000
+$stalePids = Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique
+if ($stalePids) {
+  foreach ($p in $stalePids) {
+    if ($p -gt 4) {
+      Stop-Process -Id $p -Force -ErrorAction SilentlyContinue
+    }
+  }
+}
+
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host " Starting Murf + LiveKit Day 4 Voice Agent" -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
