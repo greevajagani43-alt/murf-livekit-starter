@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Track } from 'livekit-client';
-import { AnimatePresence, type MotionProps, motion } from 'motion/react';
+import { AnimatePresence, type HTMLMotionProps as MotionProps, motion } from 'motion/react';
 import {
   type TrackReference,
   VideoTrack,
