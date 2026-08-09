@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { AnimatePresence, type HTMLMotionProps as MotionProps, motion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
+type MotionProps = React.ComponentProps<typeof motion.div>;
 import { useAgent, useSessionContext, useSessionMessages } from '@livekit/components-react';
 import { AgentChatTranscript } from '@/components/agents-ui/agent-chat-transcript';
 import {

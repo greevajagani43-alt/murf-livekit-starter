@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { type HTMLMotionProps as MotionProps, motion } from 'motion/react';
+import { motion } from 'motion/react';
+type MotionProps = React.ComponentProps<typeof motion.div>;
 import { useVoiceAssistant } from '@livekit/components-react';
 import { AgentAudioVisualizerAura } from '@/components/agents-ui/agent-audio-visualizer-aura';
 import { AgentAudioVisualizerBar } from '@/components/agents-ui/agent-audio-visualizer-bar';

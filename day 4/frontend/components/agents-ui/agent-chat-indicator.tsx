@@ -1,6 +1,7 @@
 import { type ComponentProps, type Ref } from 'react';
 import { type VariantProps, cva } from 'class-variance-authority';
-import { type HTMLMotionProps as MotionProps, motion } from 'motion/react';
+import { motion } from 'motion/react';
+type MotionProps = ComponentProps<typeof motion.div>;
 import { cn } from '@/lib/shadcn/utils';
 
 const motionAnimationProps = {
