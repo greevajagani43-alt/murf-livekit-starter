@@ -27,6 +27,22 @@ def init_db():
     logger.info(f"Database initialized at {DB_PATH}")
 
 
+def _normalize_name(name: str) -> str:
+    clean = name.strip().lower()
+    for prefix in [
+        "my name is ",
+        "i am ",
+        "mera naam ",
+        "main ",
+        "this is ",
+        "i'm ",
+        "call me ",
+    ]:
+        if clean.startswith(prefix):
+            clean = clean[len(prefix) :].strip()
+    return clean.strip(" .!?,")
+
+
 def get_user(name: str):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -37,13 +53,32 @@ def get_user(name: str):
     if not rows:
         return None
 
+    clean_input = _normalize_name(name)
+
+    # 1. Exact or normalized string match
+    for row in rows:
+        stored_name = _normalize_name(row[1])
+        if stored_name == clean_input or stored_name in clean_input or clean_input in stored_name:
+            try:
+                facts = json.loads(row[3]) if row[3] else {}
+            except json.JSONDecodeError:
+                facts = {}
+            return {
+                "user_id": row[0],
+                "name": row[1],
+                "language_preference": row[2],
+                "facts": facts,
+                "last_interaction": row[4],
+            }
+
+    # 2. Fuzzy match fallback
     names = [row[1] for row in rows]
-    matches = difflib.get_close_matches(name, names, n=1, cutoff=0.6)
+    matches = difflib.get_close_matches(clean_input, [_normalize_name(n) for n in names], n=1, cutoff=0.4)
 
     if matches:
-        matched_name = matches[0]
+        matched_norm = matches[0]
         for row in rows:
-            if row[1].lower() == matched_name.lower():
+            if _normalize_name(row[1]) == matched_norm:
                 try:
                     facts = json.loads(row[3]) if row[3] else {}
                 except json.JSONDecodeError:
@@ -60,7 +95,13 @@ def get_user(name: str):
 
 
 def save_user(name: str, facts: dict, language_preference: str = "Hindi"):
-    existing = get_user(name)
+    clean_name = _normalize_name(name)
+    if clean_name:
+        display_name = clean_name.title()
+    else:
+        display_name = name
+
+    existing = get_user(display_name)
     user_id = existing["user_id"] if existing else f"usr_{uuid.uuid4().hex[:8]}"
 
     conn = sqlite3.connect(DB_PATH)
@@ -76,9 +117,9 @@ def save_user(name: str, facts: dict, language_preference: str = "Hindi"):
             facts=excluded.facts,
             last_interaction=CURRENT_TIMESTAMP
     """,
-        (user_id, name, language_preference, facts_json),
+        (user_id, display_name, language_preference, facts_json),
     )
     conn.commit()
     conn.close()
-    logger.info(f"User {name} ({user_id}) saved/updated in database.")
+    logger.info(f"User {display_name} ({user_id}) saved/updated in database.")
     return user_id
