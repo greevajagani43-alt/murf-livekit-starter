@@ -11,8 +11,15 @@ Telephony: LiveKit SIP Trunk → Twilio → Customer's phone
 import logging
 import os
 import re
+import sys
 from pathlib import Path
 from typing import Optional
+
+# Fix Windows console Unicode encoding for Hindi/multilingual log output
+if sys.stdout.encoding != "utf-8":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if sys.stderr.encoding != "utf-8":
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 from dotenv import load_dotenv
 from livekit import rtc
@@ -60,8 +67,8 @@ class Assistant(Agent):
 
     async def on_enter(self) -> None:
         """Speak outbound greeting immediately when call connects."""
-        if self._is_outbound:
-            await self.say(OUTBOUND_GREETING, allow_interruptions=True)
+        if self._is_outbound and hasattr(self, "session") and self.session:
+            await self.session.say(OUTBOUND_GREETING, allow_interruptions=True)
 
 
 # ── Server setup ───────────────────────────────────────────────────────────
@@ -106,11 +113,12 @@ async def my_agent(ctx: JobContext):
 
     # Detect whether this is an outbound/SIP call or a browser call
     # For outbound calls the room is pre-populated with a SIP participant
-    is_outbound = False
+    is_outbound = "saathi_outbound" in ctx.room.name
     remote_participants = list(ctx.room.remote_participants.values())
     if remote_participants:
         first = remote_participants[0]
-        is_outbound = is_sip_participant(first)
+        if is_sip_participant(first):
+            is_outbound = True
         logger.info(
             "Participant kind=%s  is_outbound=%s", first.kind, is_outbound
         )
@@ -154,6 +162,10 @@ async def my_agent(ctx: JobContext):
             ),
         ),
     )
+
+    if is_outbound:
+        logger.info("Outbound call detected — speaking greeting via Murf Falcon TTS: %s", OUTBOUND_GREETING)
+        await session.say(OUTBOUND_GREETING, allow_interruptions=True)
 
 
 if __name__ == "__main__":
