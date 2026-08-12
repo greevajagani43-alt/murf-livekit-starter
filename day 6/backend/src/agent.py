@@ -140,6 +140,7 @@ async def my_agent(ctx: JobContext):
         tts=murf.TTS(
             voice="Anisha",
             style="Conversation",
+            pitch=10,
             tokenizer=tokenize.basic.SentenceTokenizer(min_sentence_len=2),
             text_pacing=True,
         ),

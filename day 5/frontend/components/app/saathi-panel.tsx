@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { Track } from 'livekit-client';
 import { useTheme } from 'next-themes';
-import { useAgent, useSessionContext, useSessionMessages } from '@livekit/components-react';
+import { useAgent, useSessionContext, useSessionMessages, useTrackToggle } from '@livekit/components-react';
 import type { AppConfig } from '@/app-config';
-import { AgentControlBar } from '@/components/agents-ui/agent-control-bar';
 import { AudioVisualizer } from '@/components/agents-ui/blocks/agent-session-view-01/components/audio-visualizer';
 import { Shimmer } from '@/components/ai-elements/shimmer';
 import { ProductCard } from '@/components/app/product-card';
@@ -94,6 +94,8 @@ export function SaathiPanel({ appConfig }: SaathiPanelProps) {
   const { messages } = useSessionMessages(session);
   const { state: agentState } = useAgent();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [isStarting, setIsStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
 
   // Local product catalogue for mention matching
   const [catalogue, setCatalogue] = useState<Product[]>([]);
@@ -104,7 +106,6 @@ export function SaathiPanel({ appConfig }: SaathiPanelProps) {
       .then((r) => r.json())
       .then((data: unknown) => {
         if (Array.isArray(data)) setCatalogue(data);
-        // else: no chips — non-fatal
       })
       .catch(() => {
         // Non-fatal — product chips just won't appear
@@ -118,6 +119,19 @@ export function SaathiPanel({ appConfig }: SaathiPanelProps) {
     }
   }, [messages]);
 
+  const handleStart = async () => {
+    setStartError(null);
+    setIsStarting(true);
+    try {
+      await session.start();
+    } catch (err) {
+      console.error('Session start error:', err);
+      setStartError(err instanceof Error ? err.message : 'Failed to connect. Is the backend running?');
+    } finally {
+      setIsStarting(false);
+    }
+  };
+
   const vizColor =
     resolvedTheme === 'dark'
       ? (appConfig.audioVisualizerColorDark ?? '#FCD34D')
@@ -125,13 +139,6 @@ export function SaathiPanel({ appConfig }: SaathiPanelProps) {
 
   const stateLabel = agentStateLabel(agentState);
 
-  const controls = {
-    leave: true,
-    microphone: true,
-    chat: false,
-    camera: false,
-    screenShare: false,
-  };
 
   return (
     <div className="flex h-full w-full flex-col bg-[#FAFAF7] dark:bg-background">
@@ -207,21 +214,20 @@ export function SaathiPanel({ appConfig }: SaathiPanelProps) {
       {/* ── Controls ─────────────────────────────────────────────────────── */}
       <div className="flex-shrink-0 border-t border-[#E7E5E0] dark:border-border bg-white dark:bg-card px-4 py-3">
         {!session.isConnected ? (
-          <button
-            onClick={session.start}
-            className="w-full rounded-full bg-amber-500 hover:bg-amber-600 active:scale-95 transition-all py-3 text-sm font-bold text-white shadow-sm"
-          >
-            🎙️ {appConfig.startButtonText ?? 'Baat karo Saathi se'}
-          </button>
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={handleStart}
+              disabled={isStarting}
+              className="w-full rounded-full bg-amber-500 hover:bg-amber-600 active:scale-95 transition-all py-3 text-sm font-bold text-white shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isStarting ? '⏳ Connecting…' : `🎙️ ${appConfig.startButtonText ?? 'Baat karo Saathi se'}`}
+            </button>
+            {startError && (
+              <p className="text-xs text-red-500 text-center">{startError}</p>
+            )}
+          </div>
         ) : (
-          <AgentControlBar
-            variant="livekit"
-            controls={controls}
-            isChatOpen={false}
-            isConnected={session.isConnected}
-            onDisconnect={session.end}
-            onIsChatOpenChange={() => { }}
-          />
+          <ConnectedControls onEnd={session.end} />
         )}
       </div>
 
@@ -231,6 +237,37 @@ export function SaathiPanel({ appConfig }: SaathiPanelProps) {
           🛵 Free delivery above ₹300 · COD / GPay / PhonePe / Paytm
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Connected controls: simple mic + end call ──────────────────────────────
+
+function ConnectedControls({ onEnd }: { onEnd: () => void }) {
+  const micToggle = useTrackToggle({ source: Track.Source.Microphone });
+  const isMicOn = micToggle.enabled;
+
+  return (
+    <div className="flex items-center gap-3">
+      {/* Mic toggle button */}
+      <button
+        onClick={() => micToggle.toggle()}
+        className={`flex flex-1 items-center justify-center gap-2 rounded-full py-3 text-sm font-bold transition-all active:scale-95 shadow-sm
+          ${isMicOn
+            ? 'bg-amber-500 hover:bg-amber-600 text-white'
+            : 'bg-red-100 hover:bg-red-200 text-red-600 border border-red-300'
+          }`}
+      >
+        {isMicOn ? '🎙️ Mic ON' : '🔇 Mic OFF — tap to unmute'}
+      </button>
+
+      {/* End call button */}
+      <button
+        onClick={onEnd}
+        className="flex items-center justify-center rounded-full bg-red-500 hover:bg-red-600 active:scale-95 transition-all px-4 py-3 text-xs font-bold text-white shadow-sm"
+      >
+        END
+      </button>
     </div>
   );
 }

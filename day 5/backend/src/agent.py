@@ -7,6 +7,7 @@ product DB helpers to database_products.py.
 
 import logging
 import re
+from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
@@ -33,7 +34,7 @@ from tools import lookup_user, save_user_profile, lookup_catalogue, check_stock
 logger = logging.getLogger("agent")
 logger.setLevel(logging.INFO)
 
-load_dotenv(".env.local")
+load_dotenv(Path(__file__).parent.parent / ".env.local")
 
 
 # ── Assistant ──────────────────────────────────────────────────────────────
