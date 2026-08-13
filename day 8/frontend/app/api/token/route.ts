@@ -1,4 +1,5 @@
 import { AccessToken } from "livekit-server-sdk";
+import { RoomConfiguration } from "@livekit/protocol";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
@@ -10,6 +11,7 @@ export async function GET(req: NextRequest) {
   const apiKey = process.env.LIVEKIT_API_KEY;
   const apiSecret = process.env.LIVEKIT_API_SECRET;
   const wsUrl = process.env.LIVEKIT_URL;
+  const agentName = process.env.AGENT_NAME || "my-agent";
 
   if (!apiKey || !apiSecret || !wsUrl) {
     return NextResponse.json(
@@ -28,8 +30,16 @@ export async function GET(req: NextRequest) {
       roomJoin: true,
       room: roomName,
       canPublish: true,
+      canPublishData: true,
       canSubscribe: true,
     });
+
+    if (agentName) {
+      at.roomConfig = RoomConfiguration.fromJson(
+        { agents: [{ agentName }] },
+        { ignoreUnknownFields: true }
+      );
+    }
 
     const token = await at.toJwt();
     return NextResponse.json({ token, serverUrl: wsUrl, roomName });
@@ -37,3 +47,4 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }
+

@@ -90,12 +90,22 @@ export default function PerformanceDashboard() {
       const room = new Room();
       roomRef.current = room;
 
+      room.on(RoomEvent.TrackSubscribed, (track: Track) => {
+        if (track.kind === Track.Kind.Audio) {
+          const el = track.attach();
+          document.body.appendChild(el);
+        }
+      });
+
+      room.on(RoomEvent.TrackUnsubscribed, (track: Track) => {
+        track.detach().forEach((el) => el.remove());
+      });
+
       room.on(RoomEvent.Connected, async () => {
         setCallStatus("Connected · Speaking to Saathi (Local Commerce Track)");
-        // Publish microphone
+        // Enable & publish microphone using official LiveKit client method
         try {
-          const micTrack = await LocalAudioTrack.create();
-          await room.localParticipant.publishTrack(micTrack);
+          await room.localParticipant.setMicrophoneEnabled(true);
         } catch (e) {
           console.warn("Microphone access pending/denied:", e);
         }

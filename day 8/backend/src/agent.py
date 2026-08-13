@@ -56,6 +56,13 @@ load_dotenv(Path(__file__).parent.parent / ".env.local")
 # ── Function Tools for Local Commerce Enquiry ──────────────────────────────
 
 
+def _get_agent_instance(context: RunContext):
+    """Safely retrieve Assistant instance from RunContext across livekit-agents versions."""
+    if hasattr(context, "session") and hasattr(context.session, "agent"):
+        return context.session.agent
+    return getattr(context, "agent", None)
+
+
 @function_tool
 async def search_product_catalogue(
     context: RunContext,
@@ -68,7 +75,7 @@ async def search_product_catalogue(
     """
     results = search_products(query)
     # Mark product enquiry as completed on assistant instance
-    agent_instance = getattr(context, "agent", None)
+    agent_instance = _get_agent_instance(context)
     if agent_instance and hasattr(agent_instance, "mark_enquiry_completed"):
         agent_instance.mark_enquiry_completed(f"Searched product: {query}")
 
@@ -88,7 +95,7 @@ async def list_all_products(
     context: RunContext,
 ) -> str:
     """Get the full list of products available at Ratan Kirana Store."""
-    agent_instance = getattr(context, "agent", None)
+    agent_instance = _get_agent_instance(context)
     if agent_instance and hasattr(agent_instance, "mark_enquiry_completed"):
         agent_instance.mark_enquiry_completed("Listed catalogue products")
 
@@ -168,7 +175,7 @@ async def my_agent(ctx: JobContext):
     # Build pipeline with Murf Falcon TTS
     session = AgentSession(
         stt=deepgram.STT(model="nova-3", language="multi"),
-        llm=google.LLM(model="gemini-2.5-flash-lite"),
+        llm=google.LLM(model="gemini-3.6-flash"),
         tts=murf.TTS(
             voice="Anisha",
             style="Conversation",
@@ -195,6 +202,25 @@ async def my_agent(ctx: JobContext):
                 ),
             ),
         )
+
+        # Greet caller upon connection
+        await session.say(
+            "Namaste! Welcome to Ratan Kirana Store. How can I help you today?",
+            allow_interruptions=True,
+        )
+
+        # Wait until participant disconnects or room closes
+        disconnect_event = asyncio.Event()
+
+        @ctx.room.on("participant_disconnected")
+        def _on_participant_disconnected(p):
+            disconnect_event.set()
+
+        @ctx.room.on("disconnected")
+        def _on_room_disconnected(*args):
+            disconnect_event.set()
+
+        await disconnect_event.wait()
     except Exception as e:
         logger.error("Session runtime error for call %s: %s", call_id, e)
     finally:
