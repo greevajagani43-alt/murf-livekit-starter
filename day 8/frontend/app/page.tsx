@@ -1,91 +1,36 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useRef } from "react";
-import { Room, RoomEvent, Track, LocalAudioTrack } from "livekit-client";
+import React, { useEffect, useState, useRef } from "react";
+import { Room, RoomEvent, Track } from "livekit-client";
 
-interface DashboardStats {
-  totalCalls: number;
-  successfulCalls: number;
-  failedCalls: number;
-}
+type CallState = "idle" | "connecting" | "connected" | "ended";
 
-interface CallRecord {
-  id: number;
-  call_id: string;
-  masked_call_id: string;
-  call_type: string;
-  started_at: string;
-  ended_at: string | null;
-  duration: number;
-  outcome: string;
-  reason: string;
-  created_at: string;
-}
-
-export default function PerformanceDashboard() {
-  const [stats, setStats] = useState<DashboardStats>({
-    totalCalls: 0,
-    successfulCalls: 0,
-    failedCalls: 0,
-  });
-  const [calls, setCalls] = useState<CallRecord[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [lastUpdated, setLastUpdated] = useState<string>("");
-
-  // Live Call State
-  const [isCalling, setIsCalling] = useState<boolean>(false);
-  const [callStatus, setCallStatus] = useState<string>("Idle");
+export default function VoiceAgentPage() {
+  const [callState, setCallState] = useState<CallState>("idle");
+  const [statusMsg, setStatusMsg] = useState("Tap to speak with Saathi");
+  const [transcript, setTranscript] = useState<{ role: string; text: string }[]>([]);
+  const [pulse, setPulse] = useState(false);
   const roomRef = useRef<Room | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const fetchDashboardData = useCallback(async () => {
-    try {
-      const [statsRes, callsRes] = await Promise.all([
-        fetch("/api/dashboard/stats", { cache: "no-store" }),
-        fetch("/api/calls", { cache: "no-store" }),
-      ]);
-
-      if (statsRes.ok) {
-        const statsData = await statsRes.json();
-        setStats({
-          totalCalls: statsData.totalCalls ?? 0,
-          successfulCalls: statsData.successfulCalls ?? 0,
-          failedCalls: statsData.failedCalls ?? 0,
-        });
-      }
-
-      if (callsRes.ok) {
-        const callsData = await callsRes.json();
-        if (Array.isArray(callsData)) {
-          setCalls(callsData);
-        }
-      }
-
-      setLastUpdated(new Date().toLocaleTimeString());
-    } catch (err) {
-      console.error("Dashboard fetch error:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Poll database statistics every 3 seconds
+  // Auto-scroll transcript
   useEffect(() => {
-    fetchDashboardData();
-    const interval = setInterval(fetchDashboardData, 3000);
-    return () => clearInterval(interval);
-  }, [fetchDashboardData]);
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [transcript]);
 
-  // Start live test call directly from browser
-  const startTestCall = async () => {
-    if (isCalling) return;
-    setIsCalling(true);
-    setCallStatus("Connecting to Saathi...");
+  const startCall = async () => {
+    if (callState !== "idle" && callState !== "ended") return;
+    setCallState("connecting");
+    setStatusMsg("Connecting to Saathi...");
+    setTranscript([]);
 
     try {
       const roomName = `browser_call_${Date.now()}`;
-      const tokenRes = await fetch(`/api/token?roomName=${roomName}`);
-      if (!tokenRes.ok) throw new Error("Failed to generate LiveKit token");
-      const { token, serverUrl } = await tokenRes.json();
+      const res = await fetch(`/api/token?roomName=${roomName}`);
+      if (!res.ok) throw new Error("Token generation failed");
+      const { token, serverUrl } = await res.json();
 
       const room = new Room();
       roomRef.current = room;
@@ -102,441 +47,406 @@ export default function PerformanceDashboard() {
       });
 
       room.on(RoomEvent.Connected, async () => {
-        setCallStatus("Connected · Speaking to Saathi (Local Commerce Track)");
-        // Enable & publish microphone using official LiveKit client method
+        setCallState("connected");
+        setStatusMsg("Connected · Saathi is listening...");
+        setPulse(true);
         try {
           await room.localParticipant.setMicrophoneEnabled(true);
         } catch (e) {
-          console.warn("Microphone access pending/denied:", e);
+          console.warn("Mic access denied:", e);
         }
       });
 
+      // Listen for data messages (transcripts)
+      room.on(RoomEvent.DataReceived, (payload: Uint8Array) => {
+        try {
+          const decoded = JSON.parse(new TextDecoder().decode(payload));
+          if (decoded.type === "transcript") {
+            setTranscript((prev) => [...prev, { role: decoded.role, text: decoded.text }]);
+          }
+        } catch {}
+      });
+
       room.on(RoomEvent.Disconnected, () => {
-        setCallStatus("Call Ended");
-        setIsCalling(false);
-        // Refresh dashboard stats after call completes
-        setTimeout(fetchDashboardData, 1500);
+        setCallState("ended");
+        setStatusMsg("Call ended · Thank you!");
+        setPulse(false);
       });
 
       await room.connect(serverUrl, token);
+      setTranscript([{ role: "saathi", text: "Namaste! Welcome to Ratan Kirana Store. How can I help you today?" }]);
     } catch (err: any) {
-      alert(`Call failed to connect: ${err.message}`);
-      setIsCalling(false);
-      setCallStatus("Idle");
+      setCallState("idle");
+      setStatusMsg("Connection failed. Try again.");
+      setPulse(false);
     }
   };
 
-  const disconnectCall = () => {
+  const endCall = () => {
     if (roomRef.current) {
       roomRef.current.disconnect();
       roomRef.current = null;
     }
-    setIsCalling(false);
-    setCallStatus("Call Disconnected");
+    setCallState("ended");
+    setStatusMsg("Call ended · Thank you!");
+    setPulse(false);
   };
 
-  const handleReset = async () => {
-    if (confirm("Reset call database for clean test verification?")) {
-      await fetch("/api/calls", { method: "DELETE" });
-      await fetchDashboardData();
-    }
+  const resetCall = () => {
+    setCallState("idle");
+    setStatusMsg("Tap to speak with Saathi");
+    setTranscript([]);
   };
 
-  const formatDate = (isoString: string) => {
-    if (!isoString) return "-";
-    try {
-      return new Date(isoString).toLocaleString("en-IN", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        day: "2-digit",
-        month: "short",
-      });
-    } catch {
-      return isoString;
-    }
-  };
+  const btnLabel =
+    callState === "idle" ? "🎙️ Start Call"
+    : callState === "connecting" ? "Connecting..."
+    : callState === "connected" ? "🔴 End Call"
+    : "🔄 New Call";
+
+  const btnAction =
+    callState === "idle" ? startCall
+    : callState === "connecting" ? () => {}
+    : callState === "connected" ? endCall
+    : resetCall;
+
+  const btnColor =
+    callState === "idle" ? "linear-gradient(135deg,#10b981,#059669)"
+    : callState === "connecting" ? "linear-gradient(135deg,#6366f1,#4f46e5)"
+    : callState === "connected" ? "linear-gradient(135deg,#ef4444,#dc2626)"
+    : "linear-gradient(135deg,#3b82f6,#2563eb)";
 
   return (
-    <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 20px" }}>
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 32,
-          paddingBottom: 20,
-          borderBottom: "1px solid #1f293d",
-        }}
-      >
-        <div>
-          <h1
-            style={{
-              fontSize: 26,
-              fontWeight: 800,
-              letterSpacing: "0.5px",
-              color: "#ffffff",
-              marginBottom: 4,
-            }}
-          >
-            VOICE AGENT PERFORMANCE
-          </h1>
-          <p style={{ color: "#9ca3af", fontSize: 14 }}>
-            Local Commerce Track · Murf Falcon TTS · Real SQLite Database Metrics
-          </p>
-        </div>
-        <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 6 }}>
-            Auto-refreshing every 3s · Last: {lastUpdated || "Syncing..."}
-          </div>
-          <button
-            onClick={handleReset}
-            style={{
-              background: "#1f2937",
-              color: "#9ca3af",
-              border: "1px solid #374151",
-              borderRadius: 6,
-              padding: "6px 12px",
-              fontSize: 12,
-              cursor: "pointer",
-            }}
-          >
-            Reset Test DB
-          </button>
-        </div>
-      </div>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #060b14; font-family: 'Inter', sans-serif; min-height: 100vh; }
 
-      {/* Primary Metrics Cards */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: 20,
-          marginBottom: 36,
-        }}
-      >
-        {/* TOTAL CALLS */}
-        <div
-          style={{
-            background: "#111827",
-            border: "1px solid #1f2937",
-            borderRadius: 12,
-            padding: "24px 28px",
-            textAlign: "center",
-            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.3)",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 700,
-              color: "#9ca3af",
-              letterSpacing: "1px",
-              marginBottom: 8,
-            }}
-          >
-            TOTAL CALLS
-          </div>
-          <div
-            style={{
-              fontSize: 48,
-              fontWeight: 900,
-              color: "#60a5fa",
-              lineHeight: 1,
-            }}
-          >
-            {stats.totalCalls}
-          </div>
-          <div style={{ fontSize: 11, color: "#6b7280", marginTop: 8 }}>
-            Total Browser & SIP Calls Recorded
-          </div>
-        </div>
+        .va-root {
+          min-height: 100vh;
+          background: radial-gradient(ellipse at 20% 20%, rgba(99,102,241,0.12) 0%, transparent 50%),
+                      radial-gradient(ellipse at 80% 80%, rgba(16,185,129,0.08) 0%, transparent 50%),
+                      #060b14;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+        }
 
-        {/* SUCCESSFUL CALLS */}
-        <div
-          style={{
-            background: "#111827",
-            border: "1px solid #065f46",
-            borderRadius: 12,
-            padding: "24px 28px",
-            textAlign: "center",
-            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.3)",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 700,
-              color: "#34d399",
-              letterSpacing: "1px",
-              marginBottom: 8,
-            }}
-          >
-            SUCCESSFUL CALLS
-          </div>
-          <div
-            style={{
-              fontSize: 48,
-              fontWeight: 900,
-              color: "#10b981",
-              lineHeight: 1,
-            }}
-          >
-            {stats.successfulCalls}
-          </div>
-          <div style={{ fontSize: 11, color: "#059669", marginTop: 8 }}>
-            Product Enquiry Completed
-          </div>
-        </div>
+        .va-card {
+          width: 100%;
+          max-width: 520px;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 28px;
+          padding: 40px 36px 36px;
+          box-shadow: 0 32px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
+          backdrop-filter: blur(20px);
+          position: relative;
+          overflow: hidden;
+        }
+        .va-card::before {
+          content: '';
+          position: absolute;
+          top: -1px; left: -1px; right: -1px;
+          height: 2px;
+          background: linear-gradient(90deg, transparent, rgba(99,102,241,0.6), rgba(16,185,129,0.6), transparent);
+          border-radius: 28px 28px 0 0;
+        }
 
-        {/* FAILED CALLS */}
-        <div
-          style={{
-            background: "#111827",
-            border: "1px solid #991b1b",
-            borderRadius: 12,
-            padding: "24px 28px",
-            textAlign: "center",
-            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.3)",
-          }}
-        >
+        .va-logo {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 32px;
+        }
+        .va-logo-dot {
+          width: 10px; height: 10px;
+          background: #10b981;
+          border-radius: 50%;
+          box-shadow: 0 0 10px #10b981;
+        }
+        .va-logo-text {
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: 2px;
+          color: rgba(255,255,255,0.4);
+          text-transform: uppercase;
+        }
+
+        .va-avatar-wrap {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 28px;
+        }
+        .va-avatar {
+          position: relative;
+          width: 110px; height: 110px;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .va-avatar-ring {
+          position: absolute;
+          width: 110px; height: 110px;
+          border-radius: 50%;
+          border: 2px solid rgba(16,185,129,0.3);
+          animation: none;
+        }
+        .va-avatar-ring.pulse {
+          animation: ring-pulse 1.8s ease-out infinite;
+        }
+        @keyframes ring-pulse {
+          0%   { transform: scale(1);   opacity: 0.7; border-color: rgba(16,185,129,0.6); }
+          100% { transform: scale(1.6); opacity: 0;   border-color: rgba(16,185,129,0); }
+        }
+        .va-avatar-ring2 {
+          position: absolute;
+          width: 110px; height: 110px;
+          border-radius: 50%;
+          border: 2px solid rgba(99,102,241,0.2);
+          animation: none;
+        }
+        .va-avatar-ring2.pulse {
+          animation: ring-pulse2 1.8s ease-out 0.6s infinite;
+        }
+        @keyframes ring-pulse2 {
+          0%   { transform: scale(1);   opacity: 0.5; border-color: rgba(99,102,241,0.4); }
+          100% { transform: scale(1.8); opacity: 0;   border-color: rgba(99,102,241,0); }
+        }
+        .va-avatar-circle {
+          width: 90px; height: 90px;
+          background: linear-gradient(135deg, #1e293b, #0f172a);
+          border-radius: 50%;
+          border: 2px solid rgba(255,255,255,0.1);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 38px;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+          position: relative; z-index: 1;
+        }
+
+        .va-name {
+          text-align: center;
+          font-size: 28px;
+          font-weight: 900;
+          color: #ffffff;
+          letter-spacing: -0.5px;
+          margin-bottom: 6px;
+        }
+        .va-subtitle {
+          text-align: center;
+          font-size: 13px;
+          color: rgba(255,255,255,0.4);
+          margin-bottom: 8px;
+        }
+        .va-status {
+          text-align: center;
+          font-size: 13px;
+          font-weight: 600;
+          margin-bottom: 28px;
+          min-height: 20px;
+          transition: color 0.3s;
+        }
+
+        /* Waveform bars */
+        .va-wave {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+          height: 36px;
+          margin-bottom: 28px;
+        }
+        .va-wave-bar {
+          width: 4px;
+          border-radius: 2px;
+          background: rgba(99,102,241,0.3);
+          height: 8px;
+          transition: background 0.3s;
+        }
+        .va-wave.active .va-wave-bar {
+          background: #10b981;
+          animation: wave-bar 0.9s ease-in-out infinite;
+        }
+        .va-wave-bar:nth-child(1) { animation-delay: 0.0s; }
+        .va-wave-bar:nth-child(2) { animation-delay: 0.1s; }
+        .va-wave-bar:nth-child(3) { animation-delay: 0.2s; }
+        .va-wave-bar:nth-child(4) { animation-delay: 0.3s; }
+        .va-wave-bar:nth-child(5) { animation-delay: 0.4s; }
+        .va-wave-bar:nth-child(6) { animation-delay: 0.5s; }
+        .va-wave-bar:nth-child(7) { animation-delay: 0.6s; }
+        .va-wave-bar:nth-child(8) { animation-delay: 0.7s; }
+        .va-wave-bar:nth-child(9) { animation-delay: 0.8s; }
+        @keyframes wave-bar {
+          0%, 100% { height: 6px; }
+          50%       { height: 28px; }
+        }
+
+        /* CTA Button */
+        .va-btn {
+          width: 100%;
+          padding: 16px;
+          border: none;
+          border-radius: 14px;
+          font-size: 15px;
+          font-weight: 800;
+          color: #fff;
+          cursor: pointer;
+          letter-spacing: 0.5px;
+          transition: transform 0.15s, box-shadow 0.15s;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+          margin-bottom: 16px;
+        }
+        .va-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(0,0,0,0.4); }
+        .va-btn:active:not(:disabled) { transform: translateY(0); }
+        .va-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* Transcript box */
+        .va-transcript {
+          background: rgba(0,0,0,0.3);
+          border: 1px solid rgba(255,255,255,0.06);
+          border-radius: 14px;
+          padding: 16px;
+          max-height: 180px;
+          overflow-y: auto;
+          margin-bottom: 20px;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(255,255,255,0.1) transparent;
+        }
+        .va-transcript::-webkit-scrollbar { width: 4px; }
+        .va-transcript::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+        .va-msg { display: flex; gap: 8px; margin-bottom: 10px; align-items: flex-start; }
+        .va-msg:last-child { margin-bottom: 0; }
+        .va-msg-label {
+          font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+          padding: 2px 6px; border-radius: 4px; white-space: nowrap; margin-top: 2px;
+          min-width: 52px; text-align: center;
+        }
+        .va-msg-label.saathi { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.2); }
+        .va-msg-label.you { background: rgba(99,102,241,0.15); color: #818cf8; border: 1px solid rgba(99,102,241,0.2); }
+        .va-msg-text { font-size: 13px; color: rgba(255,255,255,0.75); line-height: 1.5; }
+
+        .va-footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .va-footer-badge {
+          display: flex; align-items: center; gap: 6px;
+          font-size: 11px; color: rgba(255,255,255,0.25);
+        }
+        .va-footer-badge span { color: rgba(255,255,255,0.4); font-weight: 600; }
+        .va-dash-link {
+          font-size: 11px; font-weight: 600;
+          color: rgba(99,102,241,0.7);
+          text-decoration: none;
+          padding: 4px 10px;
+          border: 1px solid rgba(99,102,241,0.2);
+          border-radius: 6px;
+          transition: all 0.2s;
+        }
+        .va-dash-link:hover { color: #818cf8; border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.08); }
+
+        .va-products {
+          display: flex; flex-wrap: wrap; gap: 6px;
+          margin-bottom: 24px;
+          justify-content: center;
+        }
+        .va-product-chip {
+          font-size: 11px; color: rgba(255,255,255,0.35);
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.07);
+          border-radius: 20px; padding: 4px 10px;
+        }
+      `}</style>
+
+      <div className="va-root">
+        <div className="va-card">
+          {/* Logo / Brand */}
+          <div className="va-logo">
+            <div className="va-logo-dot" />
+            <div className="va-logo-text">Ratan Kirana Store · Day 8</div>
+            <a href="/dashboard" className="va-dash-link" style={{ marginLeft: "auto" }}>
+              📊 Dashboard →
+            </a>
+          </div>
+
+          {/* Avatar */}
+          <div className="va-avatar-wrap">
+            <div className="va-avatar">
+              <div className={`va-avatar-ring ${pulse ? "pulse" : ""}`} />
+              <div className={`va-avatar-ring2 ${pulse ? "pulse" : ""}`} />
+              <div className="va-avatar-circle">🧑‍💼</div>
+            </div>
+          </div>
+
+          {/* Name & Subtitle */}
+          <div className="va-name">Saathi</div>
+          <div className="va-subtitle">Your AI Shopping Assistant · Murf Falcon TTS</div>
+
+          {/* Status */}
           <div
+            className="va-status"
             style={{
-              fontSize: 13,
-              fontWeight: 700,
-              color: "#f87171",
-              letterSpacing: "1px",
-              marginBottom: 8,
+              color:
+                callState === "connected" ? "#34d399"
+                : callState === "connecting" ? "#818cf8"
+                : callState === "ended" ? "#f87171"
+                : "rgba(255,255,255,0.45)",
             }}
           >
-            FAILED CALLS
+            {statusMsg}
           </div>
-          <div
-            style={{
-              fontSize: 48,
-              fontWeight: 900,
-              color: "#ef4444",
-              lineHeight: 1,
-            }}
-          >
-            {stats.failedCalls}
-          </div>
-          <div style={{ fontSize: 11, color: "#dc2626", marginTop: 8 }}>
-            Enquiry Incomplete / Dropped Call
-          </div>
-        </div>
-      </div>
 
-      {/* Interactive Voice Call Launcher */}
-      <div
-        style={{
-          background: "#111827",
-          border: "1px solid #1f2937",
-          borderRadius: 12,
-          padding: 24,
-          marginBottom: 36,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <div>
-          <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>
-            📞 Make a Real Test Call
-          </h2>
-          <p style={{ fontSize: 13, color: "#9ca3af" }}>
-            Status: <span style={{ color: isCalling ? "#34d399" : "#d1d5db" }}>{callStatus}</span>
-          </p>
-        </div>
-
-        <div style={{ display: "flex", gap: 12 }}>
-          {!isCalling ? (
-            <button
-              onClick={startTestCall}
-              style={{
-                background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                color: "#ffffff",
-                border: "none",
-                borderRadius: 8,
-                padding: "12px 24px",
-                fontSize: 14,
-                fontWeight: 700,
-                cursor: "pointer",
-                boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
-              }}
-            >
-              🎙️ Baat Karo Saathi Se (Start Call)
-            </button>
-          ) : (
-            <button
-              onClick={disconnectCall}
-              style={{
-                background: "#ef4444",
-                color: "#ffffff",
-                border: "none",
-                borderRadius: 8,
-                padding: "12px 24px",
-                fontSize: 14,
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              🔴 End Call
-            </button>
+          {/* Product chips */}
+          {callState === "idle" && (
+            <div className="va-products">
+              {["🌾 Atta", "🛢 Oil", "🥛 Milk", "🍚 Rice", "🫘 Dal", "🎧 Headphones", "🧂 Salt"].map((p) => (
+                <div key={p} className="va-product-chip">{p}</div>
+              ))}
+            </div>
           )}
+
+          {/* Waveform */}
+          <div className={`va-wave ${pulse ? "active" : ""}`}>
+            {[...Array(9)].map((_, i) => (
+              <div key={i} className="va-wave-bar" style={{ animationDelay: `${i * 0.1}s` }} />
+            ))}
+          </div>
+
+          {/* Transcript */}
+          {transcript.length > 0 && (
+            <div className="va-transcript" ref={scrollRef}>
+              {transcript.map((m, i) => (
+                <div key={i} className="va-msg">
+                  <div className={`va-msg-label ${m.role}`}>{m.role === "saathi" ? "Saathi" : "You"}</div>
+                  <div className="va-msg-text">{m.text}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* CTA Button */}
+          <button
+            className="va-btn"
+            style={{ background: btnColor }}
+            onClick={btnAction}
+            disabled={callState === "connecting"}
+          >
+            {btnLabel}
+          </button>
+
+          {/* Footer */}
+          <div className="va-footer">
+            <div className="va-footer-badge">
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: callState === "connected" ? "#10b981" : "rgba(255,255,255,0.15)" }} />
+              <span>Deepgram Nova-3 STT</span>
+              <span style={{ color: "rgba(255,255,255,0.15)" }}>·</span>
+              <span>Murf Falcon TTS</span>
+            </div>
+          </div>
         </div>
       </div>
-
-      {/* Recent Calls Table */}
-      <div
-        style={{
-          background: "#111827",
-          border: "1px solid #1f2937",
-          borderRadius: 12,
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            padding: "18px 24px",
-            borderBottom: "1px solid #1f2937",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <h3 style={{ fontSize: 16, fontWeight: 700, color: "#f9fafb" }}>
-            Recent Calls Log
-          </h3>
-          <span style={{ fontSize: 12, color: "#6b7280" }}>
-            Showing last {calls.length} calls (Anonymized)
-          </span>
-        </div>
-
-        {loading ? (
-          <div style={{ padding: 40, textAlign: "center", color: "#9ca3af" }}>
-            Loading call records...
-          </div>
-        ) : calls.length === 0 ? (
-          <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>
-            No calls recorded yet in SQLite database. Click "Start Call" above or dial via SIP to generate real call data!
-          </div>
-        ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table
-              style={{
-                width: "100%",
-                borderCollapse: "collapse",
-                fontSize: 13,
-                textAlign: "left",
-              }}
-            >
-              <thead>
-                <tr
-                  style={{
-                    background: "#1f2937",
-                    color: "#9ca3af",
-                    textTransform: "uppercase",
-                    fontSize: 11,
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  <th style={{ padding: "12px 20px" }}>Call ID</th>
-                  <th style={{ padding: "12px 20px" }}>Type</th>
-                  <th style={{ padding: "12px 20px" }}>Duration</th>
-                  <th style={{ padding: "12px 20px" }}>Outcome</th>
-                  <th style={{ padding: "12px 20px" }}>Reason / Outcome Detail</th>
-                  <th style={{ padding: "12px 20px" }}>Timestamp</th>
-                </tr>
-              </thead>
-              <tbody>
-                {calls.map((c, idx) => (
-                  <tr
-                    key={c.id || idx}
-                    style={{
-                      borderBottom: "1px solid #1f2937",
-                      background: idx % 2 === 0 ? "#111827" : "#0f1623",
-                    }}
-                  >
-                    {/* Anonymized Call ID */}
-                    <td
-                      style={{
-                        padding: "14px 20px",
-                        fontFamily: "monospace",
-                        color: "#60a5fa",
-                        fontWeight: 600,
-                      }}
-                    >
-                      {c.masked_call_id || c.call_id}
-                    </td>
-
-                    {/* Type */}
-                    <td style={{ padding: "14px 20px" }}>
-                      <span
-                        style={{
-                          background: c.call_type === "sip" ? "#312e81" : "#1e293b",
-                          color: c.call_type === "sip" ? "#a5b4fc" : "#94a3b8",
-                          padding: "3px 8px",
-                          borderRadius: 4,
-                          fontSize: 11,
-                          fontWeight: 700,
-                          textTransform: "uppercase",
-                        }}
-                      >
-                        {c.call_type}
-                      </span>
-                    </td>
-
-                    {/* Duration */}
-                    <td style={{ padding: "14px 20px", color: "#d1d5db" }}>
-                      {c.duration ? `${c.duration}s` : "0s"}
-                    </td>
-
-                    {/* Outcome Badge */}
-                    <td style={{ padding: "14px 20px" }}>
-                      <span
-                        style={{
-                          background:
-                            c.outcome === "successful" ? "rgba(16, 185, 129, 0.15)" : "rgba(239, 68, 68, 0.15)",
-                          color: c.outcome === "successful" ? "#34d399" : "#f87171",
-                          border: `1px solid ${
-                            c.outcome === "successful" ? "#059669" : "#dc2626"
-                          }`,
-                          padding: "4px 10px",
-                          borderRadius: 6,
-                          fontSize: 11,
-                          fontWeight: 800,
-                          textTransform: "uppercase",
-                          letterSpacing: "0.5px",
-                        }}
-                      >
-                        {c.outcome}
-                      </span>
-                    </td>
-
-                    {/* Reason */}
-                    <td style={{ padding: "14px 20px", color: "#9ca3af" }}>
-                      {c.reason || "-"}
-                    </td>
-
-                    {/* Time */}
-                    <td
-                      style={{
-                        padding: "14px 20px",
-                        color: "#6b7280",
-                        fontSize: 12,
-                      }}
-                    >
-                      {formatDate(c.started_at || c.created_at)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
+    </>
   );
 }
