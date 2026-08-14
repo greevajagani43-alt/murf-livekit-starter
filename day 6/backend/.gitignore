@@ -1,0 +1,10 @@
+.env.local
+.env
+__pycache__/
+*.py[cod]
+.venv/
+*.db
+uv.lock
+dist/
+build/
+*.egg-info/

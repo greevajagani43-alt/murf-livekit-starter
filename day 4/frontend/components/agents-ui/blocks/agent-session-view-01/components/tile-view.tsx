@@ -69,7 +69,11 @@ export function useLocalTrackRef(source: Track.Source) {
 
 interface TileLayoutProps {
   chatOpen: boolean;
+<<<<<<< HEAD
   audioVisualizerType?: 'bar' | 'wave' | 'grid' | 'radial' | 'aura';
+=======
+  audioVisualizerType?: 'bar' | 'wave' | 'grid' | 'radial' | 'aura' | 'robot';
+>>>>>>> ec29265f25fcb9e3403fb8b594c72d56a28810bd
   audioVisualizerColor?: `#${string}`;
   audioVisualizerColorShift?: number;
   audioVisualizerWaveLineWidth?: number;

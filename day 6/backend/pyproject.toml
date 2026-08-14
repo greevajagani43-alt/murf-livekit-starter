@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-starter-python-day6"
+version = "1.0.0"
+description = "Day 6 — Outbound Voice Calls: Saathi powered by Murf Falcon TTS, LiveKit Agents, and Twilio SIP"
+requires-python = ">=3.10, <3.15"
+
+dependencies = [
+    # Core LiveKit agent framework with all plugins
+    "livekit-agents[deepgram,google,silero,turn-detector]~=1.4",
+    # Murf Falcon TTS
+    "livekit-murf>=0.1.1",
+    # LiveKit noise cancellation (telephony-grade for SIP calls)
+    "livekit-plugins-noise-cancellation~=0.2",
+    # LiveKit server SDK (needed for SIP Participant API + room creation)
+    "livekit-api>=0.7.0",
+    # FastAPI trigger server
+    "fastapi>=0.141.1",
+    "uvicorn>=0.52.1",
+    # Twilio SDK (for direct Twilio REST API if needed)
+    "twilio>=9.0",
+    # Environment loading
+    "python-dotenv",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+    "httpx",   # for testing FastAPI
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "B", "A", "C4", "UP", "SIM", "RUF"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

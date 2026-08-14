@@ -59,6 +59,15 @@ importers:
       '@rive-app/react-webgl2':
         specifier: ^4.26.1
         version: 4.26.1(react@19.1.1)
+<<<<<<< HEAD
+=======
+      '@splinetool/react-spline':
+        specifier: ^4.1.0
+        version: 4.1.0(@splinetool/runtime@1.12.98)(next@15.5.9(@opentelemetry/api@1.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+      '@splinetool/runtime':
+        specifier: ^1.12.98
+        version: 1.12.98
+>>>>>>> ec29265f25fcb9e3403fb8b594c72d56a28810bd
       '@xyflow/react':
         specifier: ^12.10.0
         version: 12.10.0(@types/react@19.1.12)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
@@ -1413,6 +1422,23 @@ packages:
   '@shikijs/vscode-textmate@10.0.2':
     resolution: {integrity: sha512-83yeghZ2xxin3Nj8z1NMd/NCuca+gsYXswywDy5bHvwlWL8tpTQmzGeUuHd9FC3E/SBEMvzJRwWEOz5gGes9Qg==}
 
+<<<<<<< HEAD
+=======
+  '@splinetool/react-spline@4.1.0':
+    resolution: {integrity: sha512-Y379gm17gw+1nxT/YXTCJnVIWuu7tsUH1tp/YxsYb0pZnc9Gljk7Om4Kpq7WPq0bZ4zidVCxf6xn6jgDcbHifQ==}
+    peerDependencies:
+      '@splinetool/runtime': '*'
+      next: '>=14.2.0'
+      react: '*'
+      react-dom: '*'
+    peerDependenciesMeta:
+      next:
+        optional: true
+
+  '@splinetool/runtime@1.12.98':
+    resolution: {integrity: sha512-UWZH/+4XtNgMMgmDiWhZS55WOwUDGuTj4uH6fiZV6Jol3d3v3z1RRBObspx8GMio0HajOYGg7FJ8TZdyBdpW4A==}
+
+>>>>>>> ec29265f25fcb9e3403fb8b594c72d56a28810bd
   '@standard-schema/spec@1.0.0':
     resolution: {integrity: sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA==}
 
@@ -1928,6 +1954,12 @@ packages:
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
 
+<<<<<<< HEAD
+=======
+  blurhash@2.0.5:
+    resolution: {integrity: sha512-cRygWd7kGBQO3VEhPiTgq4Wc43ctsM+o46urrmPOiuAe+07fzlSB9OJVdpgDL0jPqXUVQ9ht7aq7kxOeJHRK+w==}
+
+>>>>>>> ec29265f25fcb9e3403fb8b594c72d56a28810bd
   brace-expansion@1.1.12:
     resolution: {integrity: sha512-9T9UjW3r0UW5c1Q7GTwllptXwhvYmEzFhzMfZ9H7FQWt+uZePjZPjBP/W1ZEyZ1twGWom5/56TF4lPcqjnDHcg==}
 
@@ -3414,6 +3446,13 @@ packages:
     resolution: {integrity: sha512-gXah6aZrcUxjWg2zR2MwouP2eHlCBzdV4pygudehaKXSGW4v2AsRQUK+lwwXhii6KFZcunEnmSUoYp5CXibxtA==}
     engines: {node: '>= 0.4'}
 
+<<<<<<< HEAD
+=======
+  on-change@4.0.0:
+    resolution: {integrity: sha512-PTu7C9Jsz4b+sNMDpH0eZFTr7uxdOtoDWRnhaVNK50bgrrnW5nvbWI0jm5DG9qOoTnIhBzE9xoKVFPD9xgtbdg==}
+    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
+
+>>>>>>> ec29265f25fcb9e3403fb8b594c72d56a28810bd
   oniguruma-parser@0.12.1:
     resolution: {integrity: sha512-8Unqkvk1RYc6yq2WBYRj4hdnsAxVze8i7iPfQr8e4uSP3tRv0rpZcbGUDvxfQQcdwHt/e9PrMvGCsa8OqG9X3w==}
 
@@ -3613,6 +3652,12 @@ packages:
   react-is@16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
 
+<<<<<<< HEAD
+=======
+  react-merge-refs@2.1.1:
+    resolution: {integrity: sha512-jLQXJ/URln51zskhgppGJ2ub7b2WFKGq3cl3NYKtlHoTG+dN2q7EzWrn3hN3EgPsTMvpR9tpq5ijdp7YwFZkag==}
+
+>>>>>>> ec29265f25fcb9e3403fb8b594c72d56a28810bd
   react-remove-scroll-bar@2.3.8:
     resolution: {integrity: sha512-9r+yi9+mgU33AKcj6IbT9oRCO78WriSj6t/cF8DWBZJ9aOGPOTEDvdUDz1FwKim7QXWwmHqtdHnRJfhAxEG46Q==}
     engines: {node: '>=10'}
@@ -3768,6 +3813,12 @@ packages:
   sdp@3.2.1:
     resolution: {integrity: sha512-lwsAIzOPlH8/7IIjjz3K0zYBk7aBVVcvjMwt3M4fLxpjMYyy7i3I97SLHebgn4YBjirkzfp3RvRDWSKsh/+WFw==}
 
+<<<<<<< HEAD
+=======
+  semver-compare@1.0.0:
+    resolution: {integrity: sha512-YM3/ITh2MJ5MtzaM429anh+x2jiLVjqILF4m4oyQB18W7Ggea7BfqdH/wGMK7dDiMghv/6WG7znWMwUDzJiXow==}
+
+>>>>>>> ec29265f25fcb9e3403fb8b594c72d56a28810bd
   semver@6.3.1:
     resolution: {integrity: sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==}
     hasBin: true
@@ -3930,6 +3981,12 @@ packages:
     resolution: {integrity: sha512-5S7Va8hKfV7W5U6g3aYxXmlPoZVAwUMy9AOKyF2fVuZa2UD3qZjg578OrLRt8PcNN1PleVaL/5/yYATNL0ICUw==}
     engines: {node: '>=18'}
 
+<<<<<<< HEAD
+=======
+  thumbhash@0.1.1:
+    resolution: {integrity: sha512-kH5pKeIIBPQXAOni2AiY/Cu/NKdkFREdpH+TLdM0g6WA7RriCv0kPLgP731ady67MhTAqrVG/4mnEeibVuCJcg==}
+
+>>>>>>> ec29265f25fcb9e3403fb8b594c72d56a28810bd
   tinyexec@1.0.2:
     resolution: {integrity: sha512-W/KYk+NFhkmsYpuHq5JykngiOCnxeVL8v8dFnqxSD8qEEdRfXk1SDM6JzNqcERbcGYj9tMrDQBYV9cjgnunFIg==}
     engines: {node: '>=18'}
@@ -5421,6 +5478,26 @@ snapshots:
 
   '@shikijs/vscode-textmate@10.0.2': {}
 
+<<<<<<< HEAD
+=======
+  '@splinetool/react-spline@4.1.0(@splinetool/runtime@1.12.98)(next@15.5.9(@opentelemetry/api@1.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1)':
+    dependencies:
+      '@splinetool/runtime': 1.12.98
+      blurhash: 2.0.5
+      lodash.debounce: 4.0.8
+      react: 19.1.1
+      react-dom: 19.1.1(react@19.1.1)
+      react-merge-refs: 2.1.1
+      thumbhash: 0.1.1
+    optionalDependencies:
+      next: 15.5.9(@opentelemetry/api@1.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+
+  '@splinetool/runtime@1.12.98':
+    dependencies:
+      on-change: 4.0.0
+      semver-compare: 1.0.0
+
+>>>>>>> ec29265f25fcb9e3403fb8b594c72d56a28810bd
   '@standard-schema/spec@1.0.0': {}
 
   '@swc/helpers@0.5.15':
@@ -5976,6 +6053,11 @@ snapshots:
 
   balanced-match@1.0.2: {}
 
+<<<<<<< HEAD
+=======
+  blurhash@2.0.5: {}
+
+>>>>>>> ec29265f25fcb9e3403fb8b594c72d56a28810bd
   brace-expansion@1.1.12:
     dependencies:
       balanced-match: 1.0.2
@@ -7916,6 +7998,11 @@ snapshots:
       define-properties: 1.2.1
       es-object-atoms: 1.1.1
 
+<<<<<<< HEAD
+=======
+  on-change@4.0.0: {}
+
+>>>>>>> ec29265f25fcb9e3403fb8b594c72d56a28810bd
   oniguruma-parser@0.12.1: {}
 
   oniguruma-to-es@4.3.4:
@@ -8110,6 +8197,11 @@ snapshots:
 
   react-is@16.13.1: {}
 
+<<<<<<< HEAD
+=======
+  react-merge-refs@2.1.1: {}
+
+>>>>>>> ec29265f25fcb9e3403fb8b594c72d56a28810bd
   react-remove-scroll-bar@2.3.8(@types/react@19.1.12)(react@19.1.1):
     dependencies:
       react: 19.1.1
@@ -8316,6 +8408,11 @@ snapshots:
 
   sdp@3.2.1: {}
 
+<<<<<<< HEAD
+=======
+  semver-compare@1.0.0: {}
+
+>>>>>>> ec29265f25fcb9e3403fb8b594c72d56a28810bd
   semver@6.3.1: {}
 
   semver@7.7.2: {}
@@ -8567,6 +8664,11 @@ snapshots:
       mkdirp: 3.0.1
       yallist: 5.0.0
 
+<<<<<<< HEAD
+=======
+  thumbhash@0.1.1: {}
+
+>>>>>>> ec29265f25fcb9e3403fb8b594c72d56a28810bd
   tinyexec@1.0.2: {}
 
   tinyglobby@0.2.13:

@@ -3,7 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+<<<<<<< HEAD
     "dev": "next dev --turbopack",
+=======
+    "dev": "next dev",
+>>>>>>> ec29265f25fcb9e3403fb8b594c72d56a28810bd
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -29,6 +33,11 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@radix-ui/react-use-controllable-state": "^1.2.2",
     "@rive-app/react-webgl2": "^4.26.1",
+<<<<<<< HEAD
+=======
+    "@splinetool/react-spline": "^4.1.0",
+    "@splinetool/runtime": "^1.12.98",
+>>>>>>> ec29265f25fcb9e3403fb8b594c72d56a28810bd
     "@xyflow/react": "^12.10.0",
     "ai": "^5.0.105",
     "buffer-image-size": "^0.6.4",

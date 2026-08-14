@@ -3,7 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+<<<<<<< HEAD
     "dev": "next dev --turbopack",
+=======
+    "dev": "next dev",
+>>>>>>> ec29265f25fcb9e3403fb8b594c72d56a28810bd
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

@@ -9,11 +9,18 @@ from livekit.agents import (
     JobContext,
     JobProcess,
     cli,
+<<<<<<< HEAD
     inference,
     tokenize,
     room_io,
 )
 from livekit.plugins import murf, silero, google, deepgram, noise_cancellation
+=======
+    room_io,
+    tokenize,
+)
+from livekit.plugins import deepgram, google, murf, noise_cancellation, silero
+>>>>>>> ec29265f25fcb9e3403fb8b594c72d56a28810bd
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 logger = logging.getLogger("agent")
@@ -22,6 +29,7 @@ load_dotenv(".env.local")
 
 # Change this prompt to change what your voice agent does.
 # See README.md for example prompts (customer support, language tutor, receptionist).
+<<<<<<< HEAD
 SYSTEM_PROMPT = """
 IDENTITY     You are KiranaBot, a helpful assistant for a local commerce store.
 OBJECTIVES   Help customers find product availability and answer basic questions about the store.
@@ -32,6 +40,9 @@ STYLE        Use short, conversational sentences (under 20 words). Do not use bu
 
 First-turn greeting: Begin the conversation by saying "Namaste! I am your local store assistant. How can I help you today?"
 """
+=======
+SYSTEM_PROMPT = """You are a friendly and efficient assistant for a local Kirana store (local commerce shop). Help users with their shopping list, tell them about available products, and take their orders. The user may speak in Hindi or English, but you must always reply in Hindi. Keep your responses concise, natural, and helpful. Do not use complex formatting, emojis, or symbols."""
+>>>>>>> ec29265f25fcb9e3403fb8b594c72d56a28810bd
 
 
 class Assistant(Agent):
@@ -78,6 +89,7 @@ async def my_agent(ctx: JobContext):
     session = AgentSession(
         # Speech-to-text (STT) is your agent's ears, turning the user's speech into text that the LLM can understand
         # See all available models at https://docs.livekit.io/agents/models/stt/
+<<<<<<< HEAD
         stt=deepgram.STT(
             model="nova-3",
             language="hi"
@@ -96,6 +108,22 @@ async def my_agent(ctx: JobContext):
                 tokenizer=tokenize.basic.SentenceTokenizer(min_sentence_len=2),
                 text_pacing=True
             ),
+=======
+        stt=deepgram.STT(model="nova-3", language="multi"),
+        # A Large Language Model (LLM) is your agent's brain, processing user input and generating a response
+        # See all available models at https://docs.livekit.io/agents/models/llm/
+        llm=google.LLM(
+            model="gemini-3.5-flash",
+        ),
+        # Text-to-speech (TTS) is your agent's voice, turning the LLM's text into speech that the user can hear
+        # See all available models as well as voice selections at https://docs.livekit.io/agents/models/tts/
+        tts=murf.TTS(
+            voice="Anisha",
+            style="Conversation",
+            tokenizer=tokenize.basic.SentenceTokenizer(min_sentence_len=2),
+            text_pacing=True,
+        ),
+>>>>>>> ec29265f25fcb9e3403fb8b594c72d56a28810bd
         # VAD and turn detection are used to determine when the user is speaking and when the agent should respond
         # See more at https://docs.livekit.io/agents/build/turns
         turn_detection=MultilingualModel(),

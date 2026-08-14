@@ -43,7 +43,11 @@ export async function POST(req: Request) {
         { ignoreUnknownFields: true }
       );
     }
+<<<<<<< HEAD
       
+=======
+
+>>>>>>> ec29265f25fcb9e3403fb8b594c72d56a28810bd
     // Generate participant token
     const participantName = 'user';
     const participantIdentity = `voice_assistant_user_${Math.floor(Math.random() * 10_000)}`;

@@ -241,6 +241,7 @@ export function AgentSessionView_01({
         {...BOTTOM_VIEW_MOTION_PROPS}
         className="absolute inset-x-3 bottom-0 z-50 md:inset-x-12"
       >
+<<<<<<< HEAD
         {/* Speaking state indicator */}
         <div
           className="pointer-events-none mx-auto mb-2 block w-full max-w-2xl text-center text-sm font-semibold"
@@ -250,6 +251,8 @@ export function AgentSessionView_01({
           {agentState === 'speaking' && 'VoiceCounter is speaking...'}
           {agentState === 'thinking' && 'VoiceCounter is thinking...'}
         </div>
+=======
+>>>>>>> ec29265f25fcb9e3403fb8b594c72d56a28810bd
         {/* Pre-connect message */}
         {isPreConnectBufferEnabled && (
           <AnimatePresence>
@@ -268,6 +271,20 @@ export function AgentSessionView_01({
         )}
         <div className="bg-background relative mx-auto max-w-2xl pb-3 md:pb-12">
           <Fade bottom className="absolute inset-x-0 top-0 h-4 -translate-y-full" />
+<<<<<<< HEAD
+=======
+
+          <div className="text-muted-foreground mb-4 flex justify-center text-sm font-medium">
+            {agentState === 'speaking' ? (
+              <span className="text-primary animate-pulse">Agent is speaking...</span>
+            ) : agentState === 'listening' ? (
+              <span className="text-muted-foreground">Listening to you...</span>
+            ) : (
+              <span className="text-muted-foreground capitalize">{agentState}</span>
+            )}
+          </div>
+
+>>>>>>> ec29265f25fcb9e3403fb8b594c72d56a28810bd
           <AgentControlBar
             variant="livekit"
             controls={controls}

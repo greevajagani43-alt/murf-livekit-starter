@@ -45,12 +45,22 @@ export function useAgentErrors() {
             )}
             {reasons.length === 1 && <p className="w-full">{reasons[0]}</p>}
             <p className="w-full">
+<<<<<<< HEAD
               
+=======
+              <a
+>>>>>>> ec29265f25fcb9e3403fb8b594c72d56a28810bd
                 target="_blank"
                 rel="noopener noreferrer"
                 href="https://docs.livekit.io/agents/start/voice-ai/"
                 className="whitespace-nowrap underline"
+<<<<<<< HEAD
                 See quickstart guid
+=======
+              >
+                See quickstart guide
+              </a>
+>>>>>>> ec29265f25fcb9e3403fb8b594c72d56a28810bd
               .
             </p>
           </>
@@ -60,4 +70,8 @@ export function useAgentErrors() {
       end();
     }
   }, [agent, isConnected, end]);
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> ec29265f25fcb9e3403fb8b594c72d56a28810bd
